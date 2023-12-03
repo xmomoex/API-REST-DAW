@@ -1,6 +1,8 @@
 // Importamos el framework express.
 const express = require("express");
-
+const mongoose = require('mongoose');
+const dbconnect = require("./config");
+const concesionarios = require('./models/concesionario');
 // Inicializamos la aplicación
 const app = express();
 
@@ -15,88 +17,175 @@ app.listen(port, () => {
   console.log(`Servidor desplegado en puerto: ${port}`);
 });
 
-// Definimos una estructura de datos
-// (temporal hasta incorporar una base de datos)
+dbconnect();
 
-let coches = [
-  { marca: "Renault", modelo: "Clio" },
-  { marca: "Nissan", modelo: "Skyline R34" },
-];
 
-let concesionarios = [
-{nombre: "Diauto", direccion: "Remedios, 22", listCoches: coches},  
-{nombre: "Coches Lepi", direccion: "Liebre, 3", listCoches: coches},
-{nombre: "Nachocar", direccion: "FelipeIII, 14", listCoches: coches},
-{nombre: "Flexicar", direccion: "Palacios, 5", listCoches: coches},
-{nombre: "AutosCeda", direccion: "Camino, 10", listCoches: coches}
-];
-
-// Lista todos los concesionarios
-app.get("/concesionarios", (request, response) => {
-  response.json(concesionarios);
+app.get("/concesionarios", async (request, response) => {
+  try {
+      const concesionario = await concesionarios.find();
+      response.json(concesionario);
+  } catch (error) {
+      response.status(500).json({ message: error.message });
+  }
 });
 
 // Añadir un nuevo concesionario
-app.post("/concesionarios", (request, response) => {
-  concesionarios.push(request.body);
-  response.json({ message: "ok" });
+
+app.post("/concesionarios", async (request, response) => {
+  const nuevoConcesionario = new concesionarios(request.body);
+  try {
+      const concesionarioGuardado = await nuevoConcesionario.save();
+      response.json(concesionarioGuardado);
+  } catch (error) {
+      response.status(400).json({ message: error.message });
+  }
 });
+
 // Obtener un solo concesionario
-app.get("/concesionarios/:id", (request, response) => {
-  const id = request.params.id;
-  const result = concesionarios[id];
-  response.json({ result });
+app.get("/concesionarios/:id", async (request, response) => {
+  try {
+      const concesionario = await concesionarios.findById(request.params.id);
+      if (!concesionario) {
+          return response.status(404).json({ message: 'Concesionario no encontrado' });
+      }
+      response.json(concesionario);
+  } catch (error) {
+      response.status(500).json({ message: error.message });
+  }
 });
 
 // Actualizar un solo concesionario
-app.put("/concesionarios/:id", (request, response) => {
-  const id = request.params.id;
-  concesionarios[id] = request.body;
-  response.json({ message: "ok" });
+app.put("/concesionarios/:id", async (request, response) => {
+  try {
+      const concesionario = await concesionarios.findByIdAndUpdate(
+          request.params.id,
+          request.body,
+          { new: true }
+      );
+      if (!concesionario) {
+          return response.status(404).json({ message: 'Concesionario no encontrado' });
+      }
+      response.json(concesionario);
+  } catch (error) {
+      response.status(500).json({ message: error.message });
+  }
 });
 
-// Borrar un elemento del array concesionario
-app.delete("/concesionarios/:id", (request, response) => {
-  const id = request.params.id;
-  concesionarios = concesionarios.filter((item) => concesionarios.indexOf(item) != id);
-
-  response.json({ message: "ok" });
+// Borrar un concesionario
+app.delete("/concesionarios/:id", async (request, response) => {
+  try {
+      const concesionario = await concesionarios.findByIdAndDelete(request.params.id);
+      if (!concesionario) {
+          return response.status(404).json({ message: 'Concesionario no encontrado' });
+      }
+      response.json({ message: 'Concesionario eliminado correctamente' });
+  } catch (error) {
+      response.status(500).json({ message: error.message });
+  }
 });
 
 // Lista todos los coches de un concesionario
-app.get("/concesionarios/:id/coches", (request, response) => {
-  const id = request.params.id;
-  response.json(concesionarios[id].listCoches);
+app.get("/concesionarios/:id/coches", async (request, response) => {
+  try {
+      const concesionario = await concesionarios.findById(request.params.id).populate('listCoches');
+      if (!concesionario) {
+          return response.status(404).json({ message: 'Concesionario no encontrado' });
+      }
+      response.json(concesionario.listCoches);
+  } catch (error) {
+      response.status(500).json({ message: error.message });
+  }
 });
 
-// Añadir un nuevo coche en un concesionario
-app.post("/concesionarios/:id/coches", (request, response) => {
-  const id = request.params.id;
-  concesionarios[id].listCoches.push(request.body);
-  response.json({ message: "ok" });
+//Añadir coches a un concesionario
+app.post("/concesionarios/:id/coches", async (request, response) => {
+  try {
+    const concesionario = await concesionarios.findById(request.params.id);
+
+    if (!concesionario) {
+      return response.status(404).json({ message: 'Concesionario no encontrado' });
+    }
+
+    const nuevoCoche = {
+      marca: request.body.marca,
+      modelo: request.body.modelo
+    };
+
+    concesionario.listCoches.push(nuevoCoche);
+    await concesionario.save();
+
+    response.json(nuevoCoche);
+  } catch (error) {
+    response.status(500).json({ message: error.message });
+  }
 });
 
 // Obtener un solo coche de un concesionario
-app.get("/concesionarios/:id/coches/:cocheid", (request, response) => {
-  const id = request.params.id;
-  const CocheId =  request.params.cocheid;
-  const result = concesionarios[id].listCoches[CocheId];
-  response.json({ result });
+app.get("/concesionarios/:id/coches/:cocheId", async (request, response) => {
+  try {
+    const concesionario = await concesionarios.findById(request.params.id);
+    if (!concesionario) {
+      return response.status(404).json({ message: 'Concesionario no encontrado' });
+    }
+
+    const coche = concesionario.listCoches.find(c => c.id === request.params.cocheId);
+    if (!coche) {
+      return response.status(404).json({ message: 'Coche no encontrado' });
+    }
+
+    response.json(coche);
+  } catch (error) {
+    response.status(500).json({ message: error.message });
+  }
 });
 
 // Actualizar un solo coche de un concesionario
-app.put("/concesionarios/:id/coches/:cocheid", (request, response) => {
-  const id = request.params.id;
-  const CocheId =  request.params.cocheid;
-  concesionarios[id].listCoches[CocheId] = request.body;
-  response.json({ message: "ok" });
+app.put("/concesionarios/:id/coches/:cocheId", async (request, response) => {
+  try {
+    const concesionario = await concesionarios.findById(request.params.id);
+
+    if (!concesionario) {
+      return response.status(404).json({ message: 'Concesionario no encontrado' });
+    }
+
+    const cocheIndex = concesionario.listCoches.findIndex(c => c.id === request.params.cocheId);
+    if (cocheIndex === -1) {
+      return response.status(404).json({ message: 'Coche no encontrado' });
+    }
+
+    concesionario.listCoches[cocheIndex] = {
+      marca: request.body.marca || concesionario.listCoches[cocheIndex].marca,
+      modelo: request.body.modelo || concesionario.listCoches[cocheIndex].modelo
+    };
+
+    await concesionario.save();
+
+    response.json(concesionario.listCoches[cocheIndex]);
+  } catch (error) {
+    response.status(500).json({ message: error.message });
+  }
 });
 
-// Borrar un elemento del array
-app.delete("/concesionarios/:id/coches/:cocheid", (request, response) => {
-  const id = request.params.id;
-  const CocheId =  request.params.cocheid;
-  concesionarios[id].listCoches = concesionarios[id].listCoches.filter((item) => concesionarios[id].listCoches.indexOf(item) != CocheId);
 
-  response.json({ message: "ok" });
+// Borrar un coche de un concesionario
+app.delete("/concesionarios/:id/coches/:cocheId", async (request, response) => {
+  try {
+    const concesionario = await concesionarios.findById(request.params.id);
+
+    if (!concesionario) {
+      return response.status(404).json({ message: 'Concesionario no encontrado' });
+    }
+
+    const cocheIndex = concesionario.listCoches.findIndex(c => c.id === request.params.cocheId);
+    if (cocheIndex === -1) {
+      return response.status(404).json({ message: 'Coche no encontrado' });
+    }
+
+    concesionario.listCoches.splice(cocheIndex, 1);
+    await concesionario.save();
+
+    response.json({ message: 'Coche eliminado correctamente' });
+  } catch (error) {
+    response.status(500).json({ message: error.message });
+  }
 });
