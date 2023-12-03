@@ -24,11 +24,11 @@ let coches = [
 ];
 
 let concesionarios = [
-{nombre: "Diauto", direccion: "Remedios, 22", listCoches: coches},  
-{nombre: "Coches Lepi", direccion: "Liebre, 3", listCoches: coches},
-{nombre: "Nachocar", direccion: "FelipeIII, 14", listCoches: coches},
-{nombre: "Flexicar", direccion: "Palacios, 5", listCoches: coches},
-{nombre: "AutosCeda", direccion: "Camino, 10", listCoches: coches}
+  { nombre: "Diauto", direccion: "Remedios, 22", listCoches: coches },
+  { nombre: "Coches Lepi", direccion: "Liebre, 3", listCoches: coches },
+  { nombre: "Nachocar", direccion: "FelipeIII, 14", listCoches: coches },
+  { nombre: "Flexicar", direccion: "Palacios, 5", listCoches: coches },
+  { nombre: "AutosCeda", direccion: "Camino, 10", listCoches: coches },
 ];
 
 // Lista todos los concesionarios
@@ -58,7 +58,9 @@ app.put("/concesionarios/:id", (request, response) => {
 // Borrar un elemento del array concesionario
 app.delete("/concesionarios/:id", (request, response) => {
   const id = request.params.id;
-  concesionarios = concesionarios.filter((item) => concesionarios.indexOf(item) != id);
+  concesionarios = concesionarios.filter(
+    (item) => concesionarios.indexOf(item) != id
+  );
 
   response.json({ message: "ok" });
 });
@@ -79,7 +81,7 @@ app.post("/concesionarios/:id/coches", (request, response) => {
 // Obtener un solo coche de un concesionario
 app.get("/concesionarios/:id/coches/:cocheid", (request, response) => {
   const id = request.params.id;
-  const CocheId =  request.params.cocheid;
+  const CocheId = request.params.cocheid;
   const result = concesionarios[id].listCoches[CocheId];
   response.json({ result });
 });
@@ -87,7 +89,7 @@ app.get("/concesionarios/:id/coches/:cocheid", (request, response) => {
 // Actualizar un solo coche de un concesionario
 app.put("/concesionarios/:id/coches/:cocheid", (request, response) => {
   const id = request.params.id;
-  const CocheId =  request.params.cocheid;
+  const CocheId = request.params.cocheid;
   concesionarios[id].listCoches[CocheId] = request.body;
   response.json({ message: "ok" });
 });
@@ -95,8 +97,10 @@ app.put("/concesionarios/:id/coches/:cocheid", (request, response) => {
 // Borrar un elemento del array
 app.delete("/concesionarios/:id/coches/:cocheid", (request, response) => {
   const id = request.params.id;
-  const CocheId =  request.params.cocheid;
-  concesionarios[id].listCoches = concesionarios[id].listCoches.filter((item) => concesionarios[id].listCoches.indexOf(item) != CocheId);
+  const CocheId = request.params.cocheid;
+  concesionarios[id].listCoches = concesionarios[id].listCoches.filter(
+    (item) => concesionarios[id].listCoches.indexOf(item) != CocheId
+  );
 
   response.json({ message: "ok" });
 });
