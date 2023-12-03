@@ -41,8 +41,6 @@ app.post("/concesionarios", async (request, response) => {
   }
 });
 
-// ... (Código previo)
-
 // Obtener un solo concesionario
 app.get("/concesionarios/:id", async (request, response) => {
   try {
