@@ -139,6 +139,7 @@ app.post("/concesionarios/:id/coches", async (request, response) => {
 // Obtener un solo coche de un concesionario
 app.get("/concesionarios/:id/coches/:cocheId", async (request, response) => {
   try {
+    const cocheId = request.params.cocheId;
     const concesionario = await concesionarios.findById(request.params.id);
     if (!concesionario) {
       return response
@@ -146,9 +147,7 @@ app.get("/concesionarios/:id/coches/:cocheId", async (request, response) => {
         .json({ message: "Concesionario no encontrado" });
     }
 
-    const coche = concesionario.listCoches.find(
-      (c) => c.id === request.params.cocheId
-    );
+    const coche = concesionario.listCoches[cocheId];
     if (!coche) {
       return response.status(404).json({ message: "Coche no encontrado" });
     }
@@ -162,6 +161,7 @@ app.get("/concesionarios/:id/coches/:cocheId", async (request, response) => {
 // Actualizar un solo coche de un concesionario
 app.put("/concesionarios/:id/coches/:cocheId", async (request, response) => {
   try {
+    const cocheId = request.params.cocheId;
     const concesionario = await concesionarios.findById(request.params.id);
 
     if (!concesionario) {
@@ -170,22 +170,18 @@ app.put("/concesionarios/:id/coches/:cocheId", async (request, response) => {
         .json({ message: "Concesionario no encontrado" });
     }
 
-    const cocheIndex = concesionario.listCoches.findIndex(
-      (c) => c.id === request.params.cocheId
-    );
-    if (cocheIndex === -1) {
+    if (cocheId < 0 || cocheId >= concesionario.listCoches.length) {
       return response.status(404).json({ message: "Coche no encontrado" });
     }
 
-    concesionario.listCoches[cocheIndex] = {
-      marca: request.body.marca || concesionario.listCoches[cocheIndex].marca,
-      modelo:
-        request.body.modelo || concesionario.listCoches[cocheIndex].modelo,
+    concesionario.listCoches[cocheId] = {
+      marca: request.body.marca || concesionario.listCoches[cocheId].marca,
+      modelo: request.body.modelo || concesionario.listCoches[cocheId].modelo,
     };
 
     await concesionario.save();
 
-    response.json(concesionario.listCoches[cocheIndex]);
+    response.json(concesionario.listCoches[cocheId]);
   } catch (error) {
     response.status(500).json({ message: error.message });
   }
@@ -194,6 +190,7 @@ app.put("/concesionarios/:id/coches/:cocheId", async (request, response) => {
 // Borrar un coche de un concesionario
 app.delete("/concesionarios/:id/coches/:cocheId", async (request, response) => {
   try {
+    const cocheId = request.params.cocheId;
     const concesionario = await concesionarios.findById(request.params.id);
 
     if (!concesionario) {
@@ -202,14 +199,11 @@ app.delete("/concesionarios/:id/coches/:cocheId", async (request, response) => {
         .json({ message: "Concesionario no encontrado" });
     }
 
-    const cocheIndex = concesionario.listCoches.findIndex(
-      (c) => c.id === request.params.cocheId
-    );
-    if (cocheIndex === -1) {
+    if (cocheId < 0 || cocheId >= concesionario.listCoches.length) {
       return response.status(404).json({ message: "Coche no encontrado" });
     }
 
-    concesionario.listCoches.splice(cocheIndex, 1);
+    concesionario.listCoches.splice(cocheId, 1);
     await concesionario.save();
 
     response.json({ message: "Coche eliminado correctamente" });
